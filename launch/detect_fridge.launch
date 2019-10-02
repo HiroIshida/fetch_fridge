@@ -1,0 +1,33 @@
+<launch>
+  <arg name="camera" default="head_camera_remote"/>
+  <arg name="use_mask" default="false"/>
+
+  <arg name="input_image" default="/$(arg camera)/rgb/image_rect_color"/>
+  <arg name="input_camera_info" default="/$(arg camera)/rgb/camera_info"/>
+
+  <include file="reproduce_pc.launch"/>
+
+  <group ns="/$(arg camera)/rgb">
+
+    <node name="fridge_demo_sift" pkg="imagesift" type="imagesift"
+          output="screen">
+      <remap from="image" to="$(arg input_image)" />
+      <remap from="camera_info" to="$(arg input_camera_info)"/>
+      <rosparam>
+        use_mask: false
+      </rosparam>
+    </node>
+
+    <node name="fridge_detector" pkg="jsk_perception" type="point_pose_extractor">
+      <rosparam subst_value="true">
+        template_filename: $(find fetch_fridge)/data/openni_rgb_fridge.png
+        window_name: fridge_handle_upper
+        object_width: 0.231
+        object_height: 0.196
+        relative_pose: '0.22 0.05 0.075  0.707107 0 -0.707107 0'
+        viewer_window: false
+      </rosparam>
+    </node>
+  </group>
+
+</launch>
