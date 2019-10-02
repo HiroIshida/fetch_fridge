@@ -1,9 +1,11 @@
 (load "package://fetcheus/fetch-interface.l")
+(require "models/arrow-object.l")
 (ros::load-ros-manifest "roseus")
 (ros::roseus "demo_main" :anonymous t)
 
 (fetch-init)
 (objects *fetch*)
+(setq *tfl* (instance ros::transform-listener :init))
 
 (defun reflect (robot)
   (send robot :angle-vector (send *ri* :state :potentio-vector)))
@@ -18,26 +20,67 @@
   )
 
 (setq *pos-fridge* nil)
-(ros::subscribe "/head_camera_remote/pose_fridge_handle" geometry_msgs::PoseStamped
+(setq *q-fridge* nil)
+(setq *co* nil)
+(Setq *pose* nil)
+(ros::subscribe "/head_camera_remote/rgb/object_pose" geometry_msgs::PoseStamped
                 #'(lambda (msg) 
-                    (let* ((pose (send msg :pose))
-                           (pos (send pose :position))
-                           (vec (float-vector
-                                  (* (send pos :x) 1000)
-                                  (* (send pos :y) 1000)
-                                  (* (send pos :z) 1000))))
-                      (setq *pos-fridge* vec))))
+                    (let* ((pose_ (send msg :pose)))
+                      (setq *pose* pose_))))
 
+
+(setq *lt* (send *tfl* :lookup-transform 
+                 "base_link" "/head_camera_rgb_optical_frame"
+                 (ros::time 0)))
+(setq *co-new* (send *lt* :transform (ros::tf-pose->coords *pose*)))
+
+
+#|
+(lt (send *tfl* :lookup-transform 
+         "/base_link" 
+         "/head_camera_rgb_optical_frame" (ros::time 0)))
+|#
+
+(defun visualizable (_co)
+  (let* ((co (arrow))
+         (send co :newcoords (send _co :copy-worldcoords)))
+    co))
+
+
+#|
 (defun visualize ()
   (let ((cube (make-cube 10 10 10)))
     (send cube :translate *pos-fridge* :world)
     (objects (list *fetch* cube))))
+|#
 
 (defun set-home-posture (robot)
   (send *ri* :stop-grasp)
   (send robot :reset-pose)
   (send robot :torso_lift_joint :joint-angle 300) 
   (send robot :head_tilt_joint :joint-angle 0))
+
+(defun posemsg2coords (pose-msg)
+  (let* (
+         (p__ (send pose-msg :position))
+         (q_ (send pose-msg :orientation))
+         (p_ (float-vector (send p__ :x) (send p__ :y) (send p__ :z)))
+         (p (scale 1000 p_))
+         (q (float-vector (send q_ :x) (send q_ :y) (send q_ :z) (send q_ :w)))
+         (mat (transpose (quaternion2matrix q)))
+         (rpy (first (rpy-angle mat)))
+         )
+    (make-coords :pos p :rpy rpy)))
+
+;(ros::spin-once)
+
+(defun tmp ()
+  (setq *coo* (arrow))
+  (send *coo* :newcoords (send *co-new* :copy-worldcoords))
+  (objects (list *coo* *fetch*)))
+
+        
+
 
 (defun main ()
   (set-home-posture *fetch*)
@@ -64,6 +107,15 @@
   (send *fetch* :rarm :move-end-pos #f(-100 0 0) :local)
   (transmit *fetch*)
   )
+
+;(setq *coords* (posemsg2coords *pose*))
+
+
+
+
+
+
+
 
 
 
