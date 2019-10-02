@@ -32,5 +32,6 @@
 
   <!-- run dummy node, otherwise fridge_detector's publishing topics are not updated -->
   <node pkg="fetch_fridge" type="dummy_subscriber.py" name="dummy_subscriber" output="screen"/>
+  <node pkg="fetch_fridge" type="frame_converter.py" name="frame_converter" output="screen"/>
 
 </launch>
