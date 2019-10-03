@@ -28,6 +28,7 @@
     cube))
 
 (defun add-object-to-moveit (colobj obj)
+  (send colobj :wipe-all)
   (send colobj :add-object obj :frame-id "base_footprint"
         :relative-pose (send obj :copy-worldcoords)
         :object-id "fridge"))

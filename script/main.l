@@ -21,48 +21,43 @@
                       (setq *co* (send lt :transform (ros::tf-pose->coords pose)))
                       (setq *fridge* (create-fridge-colobj *co*)))))
 
-#|
-(defun add-fridge-moveit (co)
-  (let ((fridge (create-fridge-colobj co)))
-    (send *colobj* :add-object fridge :frame-id "base_footprint" 
-          :relative-pose (send fridge :copy-worldcoords)
-          :object-id "fridge")))
-|#
-
 (set-home-posture *fetch*)
 (transmit *fetch*)
 (unix:sleep 2)
 (ros::spin-once) ;; update *co*
+
+(setq *pregrasp-pose* #f(300.432 79.6908 4.72535 -105.784 118.111 -136.282 -20.4344 -138.45 -0.317235 0.56009))
+
 (add-object-to-moveit *colobj* *fridge*)
 
-
-(defun main ()
-  (set-home-posture *fetch*)
-  (transmit *fetch*)
-  (unix::sleep 2)
+(defun grasp-procedure ()
   (ros::spin-once)
+  (add-object-to-moveit *colobj* *fridge*)
+  (send *fetch* :angle-vector *pregrasp-pose*)
+  (transmit *fetch*)
 
   (send *ri* :go-grasp :effort 100 :pos 0.1)
   (send *fetch* :rarm :inverse-kinematics
-        (make-coords :pos *pos-fridge* :rpy #f(0 0 0))
+        (send *co* :copy-worldcoords)
         :rotation-axis t 
         :use-torso nil)
-  (send *fetch* :rarm :move-end-pos #f(-200 0 0) :local)
+  (send *fetch* :rarm :move-end-pos #f(-150 0 0) :local)
   (transmit *fetch*)
-  (send *ri* :go-grasp :effort 100 :pos 0.05)
-
-  (send *fetch* :rarm :move-end-pos #f(180 0 0) :local)
+  (send *fetch* :rarm :move-end-pos #f(100 0 0) :local)
+  (transmit *fetch*)
+  (send *colobj* :wipe-all)
+  (send *fetch* :rarm :move-end-pos #f(50 0 0) :local)
   (transmit *fetch*)
   (send *ri* :start-grasp :effort 300)
 
-  (send *fetch* :rarm :move-end-pos #f(-180 0 0) :local)
-  (transmit *fetch*)
-
-  (send *fetch* :rarm :move-end-pos #f(-100 0 0) :local)
+  (send *fetch* :rarm :move-end-pos #f(-20 0 0) :local)
   (transmit *fetch*)
   )
+(grasp-procedure)
 
-;(setq *coords* (posemsg2coords *pose*))
+
+
+
 
 
 
