@@ -5,7 +5,7 @@
   <arg name="input_image" default="/$(arg camera)/rgb/image_rect_color"/>
   <arg name="input_camera_info" default="/$(arg camera)/rgb/camera_info"/>
 
-  <include file="reproduce_pc.launch"/>
+  <include file="$(find fetch_fridge)/launch/reproduce_pc.launch"/>
 
   <group ns="/$(arg camera)/rgb">
 
