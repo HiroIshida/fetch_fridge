@@ -17,8 +17,11 @@
                                      (ros::time 0))))
                       (setq *co* (send lt :transform (ros::tf-pose->coords pose))))))
 
+(set-home-posture *fetch*)
+(transmit *fetch*)
 (unix:sleep 2)
 (ros::spin-once)
+(setq *colobj* (create-fridge-colobj *co*))
 
 (defun main ()
   (set-home-posture *fetch*)

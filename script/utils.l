@@ -10,7 +10,6 @@
     (send *ri* :wait-interpolation))
   )
 
-
 (defun set-home-posture (robot)
   (send *ri* :stop-grasp)
   (send robot :reset-pose)
@@ -20,5 +19,12 @@
 (defun show ()
   (let ((co-show (arrow)))
     (send co-show :newcoords (send *co* :copy-worldcoords))
-    (objects (list co-show *fetch*))))
+    (objects (list co-show *fetch* *colobj*))))
+
+(defun create-fridge-colobj (co)
+  (let* ((cube (make-cube 600 550 1600)))
+    (send cube :newcoords (send co :copy-worldcoords))
+    (send cube :translate #f(300 -180 -300) :local)
+    cube))
+
 
