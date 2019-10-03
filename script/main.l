@@ -6,6 +6,7 @@
 
 (fetch-init)
 (objects *fetch*)
+(print "hoge")
 
 (setq *tfl* (instance ros::transform-listener :init))
 (setq *colobj* (instance collision-object-publisher :init))
@@ -23,6 +24,18 @@
                       (setq *fridge* (create-fridge-colobj *co*)))))
 
 (setq *pregrasp-pose* #f(300.432 79.6908 4.72535 -105.784 118.111 -136.282 -20.4344 -138.45 -0.317235 0.56009))
+
+(defun estimate-direction ()
+  (ros::spin-once)
+  (let* ((vec (transform (send *co* :worldrot) #f(1 0 0))))
+    (setf (aref vec 2) 0.0)
+    (setq vec (scale (/ -1.0 (norm vec)) vec))
+    vec))
+
+(defun feedback ()
+  (let ((vec (estimate-direction)))
+    (send *fetch* :rarm :move-end-pos (scale 20.0 vec))
+    (transmit *fetch* :wait? t :duration 2000)))
 
 (defun grasp-procedure ()
   (send *fetch* :angle-vector *pregrasp-pose*)
@@ -43,11 +56,10 @@
   (send *fetch* :rarm :move-end-pos #f(50 0 0) :local)
   (transmit *fetch* :wait? t)
   (send *ri* :start-grasp :effort 300)
-
-  (send *fetch* :rarm :move-end-pos #f(-200 0 0) :local)
-  (transmit *fetch*)
   )
 (grasp-procedure)
+(dotimes (i 20)
+  (feedback))
 
 
 
@@ -63,16 +75,4 @@
 
 
 
-
-
-
-#|
-(send *fetch* 
-(send *fetch* :torso_lift_joint :joint-angle 300) 
-(send *fetch* :head_tilt_joint :joint-angle 0) 
-(send *fetch* :rarm :inverse-kinematics
-      (make-coords :pos #f(710 0 1150) :rpy #f(0 0 0))
-      :rotation-axis t 
-      :use-torso nil)
-|#
 
