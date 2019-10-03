@@ -19,7 +19,7 @@
 (defun show ()
   (let ((co-show (arrow)))
     (send co-show :newcoords (send *co* :copy-worldcoords))
-    (objects (list co-show *fetch* *colobj*))))
+    (objects (list co-show *fetch* *fridge*))))
 
 (defun create-fridge-colobj (co)
   (let* ((cube (make-cube 600 550 1600)))
@@ -27,4 +27,8 @@
     (send cube :translate #f(300 -180 -300) :local)
     cube))
 
+(defun add-object-to-moveit (colobj obj)
+  (send colobj :add-object obj :frame-id "base_footprint"
+        :relative-pose (send obj :copy-worldcoords)
+        :object-id "fridge"))
 

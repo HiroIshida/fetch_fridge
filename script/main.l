@@ -7,21 +7,34 @@
 (fetch-init)
 (objects *fetch*)
 (setq *tfl* (instance ros::transform-listener :init))
+(setq *colobj* (instance collision-object-publisher :init))
+(send *colobj* :wipe-all)
 
 (setq *co* nil)
+(setq *fridge* nil)
 (ros::subscribe "/head_camera_remote/rgb/object_pose" geometry_msgs::PoseStamped
                 #'(lambda (msg) 
                     (let* ((pose (send msg :pose))
                            (lt (send *tfl* :lookup-transform
                                      "base_link" "/head_camera_rgb_optical_frame"
                                      (ros::time 0))))
-                      (setq *co* (send lt :transform (ros::tf-pose->coords pose))))))
+                      (setq *co* (send lt :transform (ros::tf-pose->coords pose)))
+                      (setq *fridge* (create-fridge-colobj *co*)))))
+
+#|
+(defun add-fridge-moveit (co)
+  (let ((fridge (create-fridge-colobj co)))
+    (send *colobj* :add-object fridge :frame-id "base_footprint" 
+          :relative-pose (send fridge :copy-worldcoords)
+          :object-id "fridge")))
+|#
 
 (set-home-posture *fetch*)
 (transmit *fetch*)
 (unix:sleep 2)
-(ros::spin-once)
-(setq *colobj* (create-fridge-colobj *co*))
+(ros::spin-once) ;; update *co*
+(add-object-to-moveit *colobj* *fridge*)
+
 
 (defun main ()
   (set-home-posture *fetch*)
