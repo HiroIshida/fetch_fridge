@@ -15,7 +15,7 @@
 ;; DEFINE SUBSCRIBERS
 (setq *co* nil)
 (setq *fridge* nil)
-(ros::subscribe "/head_camera_remote/rgb/object_pose" geometry_msgs::PoseStamped
+(ros::subscribe "/head_camera_remote/rgb/handle_pose" geometry_msgs::PoseStamped
                 #'(lambda (msg) 
                     (let* ((pose (send msg :pose))
                            (lt (send *tfl* :lookup-transform
@@ -59,18 +59,24 @@
   (transmit *fetch*)
   )
 
-(ros::advertise "/base_controller/command" geometry_msgs::Twist 1)
-(loop 
-  (setq *msg* (instance geometry_msgs::Twist :init))
-  (send *msg* :linear :x 0.4)
-  (send *msg* :angular :z 0)
-  (ros::publish "/base_controller/command" *msg*)
-  (unix:usleep 200000)
-  (ros::spin-once)
-  (when (< *range-min* 0.45)
-    (return)
-  )
-  )
+
+(defun move ()
+  (ros::advertise "/base_controller/command" geometry_msgs::Twist 1)
+  (loop 
+    (setq *msg* (instance geometry_msgs::Twist :init))
+    (send *msg* :linear :x 0.4)
+    (send *msg* :angular :z 0)
+    (ros::publish "/base_controller/command" *msg*)
+    (unix:usleep 200000)
+    (ros::spin-once)
+    (when (< *range-min* 0.45)
+      (return))))
+
+(set-home-posture *fetch*)
+(transmit *fetch* :wait? t)
+(speak-jp "あ")
+(grasp-procedure)
+(feedback)
 
 
 
