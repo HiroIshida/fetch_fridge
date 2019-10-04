@@ -12,6 +12,7 @@
 (setq *colobj* (instance collision-object-publisher :init))
 (send *colobj* :wipe-all)
 
+;; DEFINE SUBSCRIBERS
 (setq *co* nil)
 (setq *fridge* nil)
 (ros::subscribe "/head_camera_remote/rgb/object_pose" geometry_msgs::PoseStamped
@@ -22,6 +23,12 @@
                                      (ros::time 0))))
                       (setq *co* (send lt :transform (ros::tf-pose->coords pose)))
                       (setq *fridge* (create-fridge-colobj *co*)))))
+
+(setq *range-min* nil)
+(ros::subscribe "/basescan_range_min" std_msgs::Float32
+                #'(lambda (msg) 
+                    (setq *range-min* (send msg :data))))
+
 
 (setq *pregrasp-pose* #f(300.432 79.6908 4.72535 -105.784 118.111 -136.282 -20.4344 -138.45 -0.317235 0.56009))
 
@@ -50,24 +57,20 @@
         :use-torso nil)
   (send *fetch* :rarm :move-end-pos #f(-150 0 0) :local)
   (transmit *fetch*)
-  (send *fetch* :rarm :move-end-pos #f(100 0 0) :local)
-  (transmit *fetch* :wait? t)
-  (send *colobj* :wipe-all)
-  (send *fetch* :rarm :move-end-pos #f(50 0 0) :local)
-  (transmit *fetch* :wait? t)
-  (send *ri* :start-grasp :effort 300)
   )
-(grasp-procedure)
-(dotimes (i 20)
-  (feedback))
 
-
-
-
-
-
-
-
+(ros::advertise "/base_controller/command" geometry_msgs::Twist 1)
+(loop 
+  (setq *msg* (instance geometry_msgs::Twist :init))
+  (send *msg* :linear :x 0.4)
+  (send *msg* :angular :z 0)
+  (ros::publish "/base_controller/command" *msg*)
+  (unix:usleep 200000)
+  (ros::spin-once)
+  (when (< *range-min* 0.45)
+    (return)
+  )
+  )
 
 
 
