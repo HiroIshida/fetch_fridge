@@ -20,14 +20,25 @@
 
     <node name="fridge_detector" pkg="jsk_perception" type="point_pose_extractor">
       <rosparam subst_value="true">
-        template_filename: $(find fetch_fridge)/data/openni_rgb_fridge.png
+        template_filename: $(find fetch_fridge)/data/asile.jpg
         window_name: fridge_handle_upper
-        object_width: 0.231
-        object_height: 0.196
-        relative_pose: '0.22 0.05 0.075  0.707107 0 -0.707107 0'
+        object_width: 0.42
+        object_height: 0.297
+        relative_pose: '0.145 0.21 0.0 0.707107 0 -0.707107 0'
         viewer_window: false
       </rosparam>
     </node>
+    <!--
+    <node name="fridge_detector" pkg="jsk_perception" type="point_pose_extractor">
+      <rosparam subst_value="true">
+        template_filename: $(find fetch_fridge)/data/asile.jpg
+        window_name: fridge_handle_upper
+        object_width: 0.42
+        object_height: 0.297
+        relative_pose: '0.22 0.05 0.075  0.707107 0 -0.707107 0'
+        viewer_window: false
+      </rosparam>
+    </node>-->
   </group>
 
   <!-- run dummy node, otherwise fridge_detector's publishing topics are not updated -->
