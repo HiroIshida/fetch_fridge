@@ -45,6 +45,6 @@
 
   <!-- run dummy node, otherwise fridge_detector's publishing topics are not updated -->
   <node pkg="fetch_fridge" type="dummy_subscriber.py" name="dummy_subscriber" output="screen"/>
-  <node pkg="fetch_fridge" type="frame_converter.py" name="frame_converter" output="screen"/>
+  <node pkg="fetch_fridge" type="republisher.py" name="republisher" output="screen"/>
   <node pkg="fetch_fridge" type="base_scan.py" name="base_scan_analyzer" output="screen"/>
 </launch>
