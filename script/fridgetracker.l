@@ -40,44 +40,22 @@
 
 
 (defun track (robot)
-  (ros::advertise "/base_controller/command" geometry_msgs::Twist 1)
   (speak-jp "動きます")
   (loop 
     (print "hoge")
-
-    (setq *msg* (instance geometry_msgs::Twist :init))
-    (send *msg* :linear :x 0.2)
-    (send *msg* :angular :z 0)
-    (ros::publish "/base_controller/command" *msg*)
     (if *use-fetch*
-      (unix:usleep 200000) )
+      (unix:usleep 200000))
 
     (ros::spin-once)
     (send robot :head_pan_joint 
           :joint-angle (compute-direction *co-fridge*))
     (let* ((angle-now (send robot :head_pan_joint :joint-angle))
-           (angle-diff (- (compute-direction *co-fridge*) angle-now))
-           (angle-cmd (+ angle-now (* 2 angle-diff))))
-      (send robot :head_pan_joint :joint-angle angle-cmd)
-      (transmit robot :wait? nil :duration 2000))))
+           (angle-diff (- (compute-direction *co-fridge*) angle-now)))
+      (let* ((p-gain 5.0)
+             (angle-cmd (+ angle-now (* p-gain angle-diff))))
+        (send robot :head_pan_joint :joint-angle angle-cmd)
+        (transmit robot :wait? nil :duration 2000)))))
 (track *pr2*)
-
-
-
-
-#|
-(send *fetch* :head_pan_joint :joint-angle -90)
-;(defun lookaround (robot)
-
-(set-home-posture *fetch*)
-(send *fetch* :head_pan_joint :joint-angle 60)
-(transmit *fetch* :wait? t :duration 1000)
-(send *fetch* :head_pan_joint :joint-angle -60)
-(transmit *fetch* :wait? nil :duration 1000)
-
-(ros::spin-once)
-|#
-
 
 
 
