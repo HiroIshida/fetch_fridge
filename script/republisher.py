@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+import numpy as np
 import rospy
+from geometry_msgs.msg import Point, Quaternion, Pose
 from geometry_msgs.msg import PoseStamped, Point32
 from sensor_msgs.msg import PointCloud
 import tf
@@ -11,18 +13,59 @@ topic_type = PoseStamped
 
 rospy.init_node('republisher')
 
+class PoseQueue:
+    def __init__(self, N):
+        self.N = N
+        self.data_position = [np.zeros(3) for n in range(N)]
+        self.data_orientation = [np.zeros(4) for n in range(N)]
+
+    def push(self, msg):
+        tmp1 = self.data_position[1:self.N]
+        tmp2 = self.data_orientation[1:self.N]
+        msg_pose = msg.pose 
+        posision_new = np.array([
+            msg_pose.position.x,
+            msg_pose.position.y,
+            msg_pose.position.z])
+        orientation_new = np.array([
+            msg_pose.orientation.x,
+            msg_pose.orientation.y,
+            msg_pose.orientation.z,
+            msg_pose.orientation.w])
+        tmp1.append(posision_new)
+        tmp2.append(orientation_new)
+        self.data_position = tmp1
+        self.data_orientation = tmp2
+
+    def mean(self):
+        position_mean = [np.mean(np.array([s[i] for s in self.data_position])) for i in range(3)]
+        orientation_mean_ = [np.mean(np.array([s[i] for s in self.data_orientation])) for i in range(4)]
+        orientation_mean = orientation_mean_/np.linalg.norm(orientation_mean_)
+        point = Point(x = position_mean[0], y = position_mean[1], z = position_mean[2])
+        orientation = Quaternion(
+                x = orientation_mean[0], 
+                y = orientation_mean[1], 
+                z = orientation_mean[2], 
+                w = orientation_mean[3]) 
+        poseMsg = Pose(position = point, orientation = orientation)
+        return poseMsg
+
 class Republisher:
     def __init__(self, topic_name, topic_name_new, topic_type):
-        self.msg = None
         self.sub = rospy.Subscriber(topic_name, topic_type, self._callback)
         self.pub = rospy.Publisher(topic_name_new, topic_type, queue_size = 1)
+        self.queue = PoseQueue(3)
+        self.header = None
 
     def _callback(self, msg):
-        self.msg = msg
+        self.queue.push(msg)
+        self.header = msg.header
 
     def publish(self):
-        if self.msg is not None:
-            self.pub.publish(self.msg)
+        if self.header is not None: 
+            pose_ave = self.queue.mean()
+            msg = PoseStamped(pose = pose_ave, header = self.header)
+            self.pub.publish(msg)
 
 rep1 = Republisher(topic_fridge_name, 'fridge_pose', PoseStamped)
 rep2 = Republisher(topic_handle_name, 'handle_pose', PoseStamped)
