@@ -1,5 +1,5 @@
 (load "utils.l")
-(setq *use-fetch* nil)
+(setq *use-fetch* t)
 (if *use-fetch*
     (progn
       (load "package://fetcheus/fetch-interface.l")
