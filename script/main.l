@@ -3,6 +3,7 @@
 (require "models/arrow-object.l")
 (ros::load-ros-manifest "roseus")
 (ros::roseus "demo_main" :anonymous t)
+(ros::rate 10)
 
 (fetch-init)
 (objects *fetch*)
@@ -15,7 +16,7 @@
 ;; DEFINE SUBSCRIBERS
 (setq *co* nil)
 (setq *fridge* nil)
-(ros::subscribe "/head_camera_remote/rgb/handle_pose" geometry_msgs::PoseStamped
+(ros::subscribe "/handle_pose" geometry_msgs::PoseStamped
                 #'(lambda (msg) 
                     (let* ((pose (send msg :pose))
                            (lt (send *tfl* :lookup-transform
@@ -30,7 +31,8 @@
                     (setq *range-min* (send msg :data))))
 
 
-(setq *pregrasp-pose* #f(300.432 79.6908 4.72535 -105.784 118.111 -136.282 -20.4344 -138.45 -0.317235 0.56009))
+(setq *pregrasp-pose* #f(300.432 -40.0 -11.8259 100.0 128.973 -173.109 54.3958 -106.06 -0.317235 0.56009))
+(send *ri* :angle-vector *pregrasp-pose*)
 
 (defun estimate-direction ()
   (ros::spin-once)
@@ -41,46 +43,48 @@
 
 (defun feedback ()
   (let ((vec (estimate-direction)))
-    (send *fetch* :rarm :move-end-pos (scale 20.0 vec))
-    (transmit *fetch* :wait? t :duration 2000)))
+    (send *fetch* :rarm :move-end-pos (scale 50.0 vec))
+    (transmit *fetch* :wait? nil :duration 2000)
+    (unix:usleep 1000000)
+    ))
 
 (defun grasp-procedure ()
   (send *fetch* :angle-vector *pregrasp-pose*)
-  (transmit *fetch* :wait? t)
+  (transmit *fetch* :wait? t :duration 5000)
   (ros::spin-once)
   (add-object-to-moveit *colobj* *fridge*)
 
-  (send *ri* :go-grasp :effort 100 :pos 0.1)
   (send *fetch* :rarm :inverse-kinematics
         (send *co* :copy-worldcoords)
         :rotation-axis t 
         :use-torso nil)
   (send *fetch* :rarm :move-end-pos #f(-150 0 0) :local)
-  (transmit *fetch*)
+  (transmit *fetch* :wait? t :duration 2000)
+
+  ;; final reaching
+  (send *fetch* :rarm :move-end-pos #f(140 0 0) :local)
+  (send *colobj* :wipe-all)
+  (transmit *fetch* :wait? t :duration 2000)
+  (send *ri* :go-grasp :effort 300)
   )
 
-
-(defun move ()
-  (ros::advertise "/base_controller/command" geometry_msgs::Twist 1)
-  (loop 
-    (setq *msg* (instance geometry_msgs::Twist :init))
-    (send *msg* :linear :x 0.4)
-    (send *msg* :angular :z 0)
-    (ros::publish "/base_controller/command" *msg*)
-    (unix:usleep 200000)
-    (ros::spin-once)
-    (when (< *range-min* 0.45)
-      (return))))
-
+;(ros::spin-once)
+(send *ri* :go-grasp :effort 100 :pos 0.1)
+(send *ri* :wait-interpolation)
 (set-home-posture *fetch*)
-(transmit *fetch* :wait? t)
+(transmit *fetch* :wait? t :duration 5000)
+(loop 
+  (print "hoge")
+  (ros::spin-once)
+  (unix:usleep 500000)
+  (unless (null *co*) (return))
+  )
 (speak-jp "あ")
+(objects (list *fetch* *fridge*))
 (grasp-procedure)
-(feedback)
-
-
-
-
+(dotimes (i 100)
+  (feedback)
+  )
 
 
 
