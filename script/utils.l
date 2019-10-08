@@ -1,3 +1,7 @@
+(defun speak-wait (str)
+  (speak-jp str)
+  (send *ri* :wait-interpolation))
+
 (defun reflect (robot)
   (send robot :angle-vector (send *ri* :state :potentio-vector)))
 
