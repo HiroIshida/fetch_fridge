@@ -3,8 +3,10 @@ import numpy as np
 import rospy
 from geometry_msgs.msg import Point, Quaternion, Pose
 from geometry_msgs.msg import PoseStamped, Point32
+from fetch_fridge.msg import PoseStampedBooled
 from sensor_msgs.msg import PointCloud
 import tf
+from tbtop_square.msg import Projected
 
 prefix = "/head_camera_remote/"
 topic_fridge_name = prefix + "rgb/fridge_pose"
@@ -21,7 +23,6 @@ def isValidTimeSequence(time_list):
     for elem in time_list:
         if elem is None:
             return False
-    print rospy.get_time()
     second = rospy.get_time()
     if (abs(time_list[-1] - second) > 1.5):
         return False
@@ -69,18 +70,15 @@ class PoseQueue:
                 z = orientation_mean[2], 
                 w = orientation_mean[3]) 
         poseMsg = Pose(position = point, orientation = orientation)
-        if isValidTimeSequence(self.data_time):
-            print "valid"
-        else:
-            print "invalid"
-
+        if not  isValidTimeSequence(self.data_time):
+            poseMsg = None
         return poseMsg
 
 class Republisher:
-    def __init__(self, topic_name, topic_name_new, topic_type):
-        self.sub = rospy.Subscriber(topic_name, topic_type, self._callback)
-        self.pub = rospy.Publisher(topic_name_new, topic_type, queue_size = 1)
-        self.queue = PoseQueue(3)
+    def __init__(self, topic_name, topic_name_new):
+        self.sub = rospy.Subscriber(topic_name, PoseStamped, self._callback)
+        self.pub = rospy.Publisher(topic_name_new, PoseStamped, queue_size = 1)
+        self.queue = PoseQueue(1)
         self.header = None
 
     def _callback(self, msg):
@@ -90,11 +88,12 @@ class Republisher:
     def publish(self):
         if self.header is not None: 
             pose_ave = self.queue.mean()
-            msg = PoseStamped(pose = pose_ave, header = self.header)
-            self.pub.publish(msg)
+            if pose_ave is not None:
+                msg = PoseStamped(pose = pose_ave, header = self.header)
+                self.pub.publish(msg)
 
-rep1 = Republisher(topic_fridge_name, 'fridge_pose', PoseStamped)
-rep2 = Republisher(topic_handle_name, 'handle_pose', PoseStamped)
+rep1 = Republisher(topic_fridge_name, 'fridge_pose')
+rep2 = Republisher(topic_handle_name, 'handle_pose')
 
 r = rospy.Rate(10)
 while not rospy.is_shutdown():
