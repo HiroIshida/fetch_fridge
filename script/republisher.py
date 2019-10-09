@@ -13,15 +13,33 @@ topic_type = PoseStamped
 
 rospy.init_node('republisher')
 
+def compute_time(msg_time):
+    sec = msg_time.secs + msg_time.nsecs * 10 ** (-9)
+    return sec
+
+def isValidTimeSequence(time_list):
+    for elem in time_list:
+        if elem is None:
+            return False
+    print rospy.get_time()
+    second = rospy.get_time()
+    if (abs(time_list[-1] - second) > 1.5):
+        return False
+    if (abs(time_list[-1] - time_list[0]) > 1.0):
+        return False
+    return True
+
 class PoseQueue:
     def __init__(self, N):
         self.N = N
         self.data_position = [np.zeros(3) for n in range(N)]
         self.data_orientation = [np.zeros(4) for n in range(N)]
+        self.data_time = [None for n in range(N)]
 
     def push(self, msg):
         tmp1 = self.data_position[1:self.N]
         tmp2 = self.data_orientation[1:self.N]
+        tmp3 = self.data_time[1:self.N]
         msg_pose = msg.pose 
         posision_new = np.array([
             msg_pose.position.x,
@@ -32,10 +50,13 @@ class PoseQueue:
             msg_pose.orientation.y,
             msg_pose.orientation.z,
             msg_pose.orientation.w])
+        time_new = compute_time(msg.header.stamp)
         tmp1.append(posision_new)
         tmp2.append(orientation_new)
+        tmp3.append(time_new)
         self.data_position = tmp1
         self.data_orientation = tmp2
+        self.data_time = tmp3
 
     def mean(self):
         position_mean = [np.mean(np.array([s[i] for s in self.data_position])) for i in range(3)]
@@ -48,6 +69,11 @@ class PoseQueue:
                 z = orientation_mean[2], 
                 w = orientation_mean[3]) 
         poseMsg = Pose(position = point, orientation = orientation)
+        if isValidTimeSequence(self.data_time):
+            print "valid"
+        else:
+            print "invalid"
+
         return poseMsg
 
 class Republisher:
