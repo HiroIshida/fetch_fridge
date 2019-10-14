@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
 import rospy
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Point, Quaternion, Pose
 from geometry_msgs.msg import PoseStamped, Point32
 from fetch_fridge.msg import PoseStampedBooled
@@ -69,15 +70,14 @@ class PoseQueue:
                 y = orientation_mean[1], 
                 z = orientation_mean[2], 
                 w = orientation_mean[3]) 
-        poseMsg = Pose(position = point, orientation = orientation)
-        if not  isValidTimeSequence(self.data_time):
-            poseMsg = None
-        return poseMsg
+        pose = Pose(position = point, orientation = orientation)
+        boolean = Bool(data = isValidTimeSequence(self.data_time))
+        return pose, boolean
 
 class Republisher:
     def __init__(self, topic_name, topic_name_new):
         self.sub = rospy.Subscriber(topic_name, PoseStamped, self._callback)
-        self.pub = rospy.Publisher(topic_name_new, PoseStamped, queue_size = 1)
+        self.pub = rospy.Publisher(topic_name_new, PoseStampedBooled, queue_size = 1)
         self.queue = PoseQueue(1)
         self.header = None
 
@@ -87,13 +87,13 @@ class Republisher:
 
     def publish(self):
         if self.header is not None: 
-            pose_ave = self.queue.mean()
-            if pose_ave is not None:
-                msg = PoseStamped(pose = pose_ave, header = self.header)
-                self.pub.publish(msg)
+            pose, boolean = self.queue.mean()
+            msg_ps = PoseStamped(pose = pose, header = self.header)
+            msg = PoseStampedBooled(ps = msg_ps, isvalid = boolean)
+            self.pub.publish(msg)
 
-rep1 = Republisher(topic_fridge_name, 'fridge_pose')
-rep2 = Republisher(topic_handle_name, 'handle_pose')
+rep1 = Republisher(topic_fridge_name, 'fridge_pose_')
+rep2 = Republisher(topic_handle_name, 'handle_pose_')
 
 r = rospy.Rate(10)
 while not rospy.is_shutdown():
