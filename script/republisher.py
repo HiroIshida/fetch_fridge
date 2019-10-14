@@ -27,7 +27,7 @@ def isValidTimeSequence(time_list):
     second = rospy.get_time()
     if (abs(time_list[-1] - second) > 1.5):
         return False
-    if (abs(time_list[-1] - time_list[0]) > 1.0):
+    if (abs(time_list[-1] - time_list[0]) > 2.0):
         return False
     return True
 
@@ -78,7 +78,7 @@ class Republisher:
     def __init__(self, topic_name, topic_name_new):
         self.sub = rospy.Subscriber(topic_name, PoseStamped, self._callback)
         self.pub = rospy.Publisher(topic_name_new, PoseStampedBooled, queue_size = 1)
-        self.queue = PoseQueue(1)
+        self.queue = PoseQueue(5)
         self.header = None
 
     def _callback(self, msg):
@@ -92,8 +92,8 @@ class Republisher:
             msg = PoseStampedBooled(ps = msg_ps, isvalid = boolean)
             self.pub.publish(msg)
 
-rep1 = Republisher(topic_fridge_name, 'fridge_pose_')
-rep2 = Republisher(topic_handle_name, 'handle_pose_')
+rep1 = Republisher(topic_fridge_name, 'fridge_pose')
+rep2 = Republisher(topic_handle_name, 'handle_pose')
 
 r = rospy.Rate(10)
 while not rospy.is_shutdown():
