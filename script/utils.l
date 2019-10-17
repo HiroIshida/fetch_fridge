@@ -20,10 +20,10 @@
   (send robot :torso_lift_joint :joint-angle 300) 
   (send robot :head_tilt_joint :joint-angle 0))
 
-(defun show ()
+(defun show (robot)
   (let ((co-show (arrow)))
     (send co-show :newcoords (send *co* :copy-worldcoords))
-    (objects (list co-show *fetch* *fridge*))))
+    (objects (list co-show robot *fridge*))))
 
 (defun create-fridge-colobj (co)
   (let* ((cube (make-cube 600 550 1600)))
