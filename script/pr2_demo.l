@@ -23,7 +23,8 @@
                     (print "hoge")
                     (unless (null (send msg :polygons))
                       (let* (
-                             (poly-door (send (elt (send msg :polygons) 0) :polygon))
+                             (areas (polygonarray->area-list msg))
+                             (poly-door (send (elt (send msg :polygons) (argmax areas)) :polygon))
                              (vec-normal (compute-normal-vector poly-door))
                              )
                         (setq *vec-normal* vec-normal)
@@ -67,16 +68,19 @@
            (co (make-coords)))
       (print *vec-normal*)
       (send co :translate (send co_end :worldpos))
-      (send co :translate (scale -5.0 *vec-normal*))
+      (send co :translate (scale -20 *vec-normal*))
       (send co :rotate rad :z :local)
-      (send robot :rarm :inverse-kinematics
-            co
-            :rotation-axis t
-            :check-collision nil
-            :use-torso nil)
-      (transmit robot :wait? nil :duration 1000)
-      (unix:usleep 300000)
-      )))
+      (let ((ik-success
+              (send robot :rarm :inverse-kinematics
+                    co
+                    :rotation-axis t
+                    :check-collision nil
+                    :use-torso nil)))
+        (when ik-success
+          (transmit robot :wait? nil :duration 1000)
+          (unix:usleep 300000))
+        ik-success
+        ))))
 
 
 (setq *preinsert-pose* #f(292.574 78.8998 0.089116 -93.3032 73.7924 5.19982 91.5822 87.7586 -47.7205 1.08744))
@@ -158,6 +162,11 @@
 (send *ri* :start-grasp :rarm :gain 0.05)
 (send *ri* :wait-interpolation)
 (speak-jp "はじめます")
-(dotimes (i 100)
-  (feedback *pr2*))
-(send *ri* :stop-grasp)
+(loop
+  (unless (feedback *pr2*)
+    (speak-wait "あ")
+    (return)))
+;(send *ri* :stop-grasp)
+
+
+
