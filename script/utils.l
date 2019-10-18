@@ -63,3 +63,14 @@
                (send polygon :area))))
     (mapcar #'polygonstamped-msg-area (send msg :polygons))))
 
+(defun argmax (lst)
+  (let ((max-val -8888888888888888888)
+        (max-i -1))
+    (dotimes (i (length lst))
+      (when (> (elt lst i) max-val)
+          (setq max-val (elt lst i))
+          (setq max-i i)))
+    max-i))
+
+
+
