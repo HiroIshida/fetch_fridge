@@ -77,10 +77,19 @@
       </rosparam>
     </node>
 
+    <node name="transformer" pkg="nodelet" type="nodelet"
+          args="standalone jsk_pcl/TfTransformCloud"
+          output="screen">
+          <remap from="~input" to="ExtractIndices/output"/>
+      <rosparam>
+        target_frame_id: base_link
+      </rosparam>
+    </node>
+
     <node name="multi_plane_estimate" pkg="nodelet" type="nodelet"
           args="standalone jsk_pcl/OrganizedMultiPlaneSegmentation"
           output="screen">
-      <remap from="~input" to="ExtractIndices/output" />
+      <remap from="~input" to="transformer/output" />
       <rosparam>
         max_curvature: 0.01
         estimate_normal: true
