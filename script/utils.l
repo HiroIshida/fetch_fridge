@@ -56,3 +56,10 @@
          (vec-normal (v- (normalize-vector (v* vec0 vec1))))
          )
     vec-normal))
+
+(defun polygonarray->area-list (msg)
+  (labels ((func (polygonstamped)
+             (let ((polygon (apply #'make-polygon (mapcar #'ros::tf-point->pos (send (send msg :polygon) :points)))))
+               (send polygon :area))))
+    (mapcar #'polygonstamped-msg-area (send msg :polygons))))
+
