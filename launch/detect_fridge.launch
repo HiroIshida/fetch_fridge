@@ -47,9 +47,59 @@
     </node>
   </group>
 
+
+  <!-- please add fetch -->
+  <arg name="input" default="/$(arg camera)/depth_registered/points"/>
+  <arg name="box_filter_frame" default="/head_mount_kinect_rgb_optical_frame" unless="$(arg fetch)"/>
+
+  <group ns="/fridge_cloud">
+    <node name="boxfilter_pre" pkg="nodelet" type="nodelet"
+      args="standalone jsk_pcl/AttentionClipper"
+      output="screen">
+      <remap from="~input/points" to="$(arg input)"/>
+      <rosparam>
+        use_multiple_attention: false
+      </rosparam>
+      <param name="dimension_x" value="1"/>
+      <param name="dimension_y" value="1"/>
+      <param name="dimension_z" value="3"/>
+      <param name="initial_pos" value="[0.0 0.0 0.0]"/>
+      <param name="frame_id" value="$(arg box_filter_frame)" />
+    </node>
+
+    <node name="ExtractIndices" pkg="nodelet" type="nodelet"
+      args="standalone jsk_pcl/ExtractIndices"
+      output="screen">
+      <remap from="~input" to="$(arg input)"/>
+      <remap from="~indices" to="boxfilter_pre/output/point_indices"/>
+      <rosparam>
+        keep_organized: true
+      </rosparam>
+    </node>
+
+    <node name="multi_plane_estimate" pkg="nodelet" type="nodelet"
+          args="standalone jsk_pcl/OrganizedMultiPlaneSegmentation"
+          output="screen">
+      <remap from="~input" to="ExtractIndices/output" />
+      <rosparam>
+        max_curvature: 0.01
+        estimate_normal: true
+      </rosparam>
+    </node>
+
+    <node name="multi_plane_extraction" pkg="nodelet" type="nodelet"
+      args="standalone jsk_pcl/MultiPlaneExtraction"
+      output="screen">
+      <remap from="~input" to="ExtractIndices/output"/>
+      <remap from="~input_polygons" to="multi_plane_estimate/output_polygon"/>
+      <remap from="~input_coefficients" to="multi_plane_estimate/output_coefficuents"/>
+      <remap from="~indices" to="multi_plane_estimate/output"/>
+    </node>
+  </group>
+
+
   <!-- run dummy node, otherwise fridge_detector's publishing topics are not updated -->
   <node pkg="fetch_fridge" type="dummy_subscriber.py" name="dummy_subscriber" output="screen"/>
   <node pkg="fetch_fridge" type="republisher.py" name="republisher" output="screen"/>
   <node pkg="fetch_fridge" type="base_scan.py" name="base_scan_analyzer" output="screen"/>
-  roslaunch pr2_moveit_config move_group.launch
 </launch>
