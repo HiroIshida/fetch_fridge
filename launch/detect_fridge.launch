@@ -62,7 +62,7 @@
       </rosparam>
       <param name="dimension_x" value="1"/>
       <param name="dimension_y" value="1"/>
-      <param name="dimension_z" value="3"/>
+      <param name="dimension_z" value="2.5"/>
       <param name="initial_pos" value="[0.0 0.0 0.0]"/>
       <param name="frame_id" value="$(arg box_filter_frame)" />
     </node>
