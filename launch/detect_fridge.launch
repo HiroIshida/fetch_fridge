@@ -1,10 +1,12 @@
 <launch>
+  <arg name="fetch" default="false"/>
   <arg name="remote" default="true"/>
   <arg name="camera" default="head_camera_remote" if="$(arg remote)"/>
   <arg name="camera" default="head_camera" unless="$(arg remote)"/>
   <arg name="use_mask" default="false"/>
 
   <include file="$(find fetch_fridge)/launch/reproduce_pc.launch" if="$(arg remote)"/>
+  <include file="$(find pr2_moveit_config)/launch/move_group.launch" unless="$(arg fetch)"/>
   <arg name="input_image" default="/$(arg camera)/rgb/image_rect_color"/>
   <arg name="input_camera_info" default="/$(arg camera)/rgb/camera_info"/>
 
@@ -49,4 +51,5 @@
   <node pkg="fetch_fridge" type="dummy_subscriber.py" name="dummy_subscriber" output="screen"/>
   <node pkg="fetch_fridge" type="republisher.py" name="republisher" output="screen"/>
   <node pkg="fetch_fridge" type="base_scan.py" name="base_scan_analyzer" output="screen"/>
+  roslaunch pr2_moveit_config move_group.launch
 </launch>
