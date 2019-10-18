@@ -53,6 +53,6 @@
          (p2 (pointmsg->vector (elt pts (* 2 (/ n-pts 3)))))
          (vec0 (normalize-vector (v- p1 p0)))
          (vec1 (normalize-vector (v- p2 p1)))
-         (vec-normal (v- (normalize-vector (cross-product vec0 vec1))))
+         (vec-normal (v- (normalize-vector (v* vec0 vec1))))
          )
     vec-normal))
